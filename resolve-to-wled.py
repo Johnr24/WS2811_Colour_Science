@@ -1,6 +1,23 @@
 import socket
 import struct
-from xml.etree import ElementTree as ET
+import requests
+
+
+def send_rgb_to_wled(ip, port, red, green, blue):
+    # Construct the JSON payload with the RGB values
+    payload = {"seg":[{"col":[[red,green,blue]]}]}
+    
+    # Send the JSON payload to the WLED instance
+    url = f"http://{ip}:{port}/json/state"
+    response = requests.put(url, json=payload)
+
+    if response.status_code == 200:
+        print("RGB values sent to WLED instance.")
+        print(f"URL: {url}")
+        print(f"Response: {response.text}")
+    else:
+        print(f"Failed to send RGB values to WLED instance. Error: {response.text}")
+
 
 def connect_to_server(ip, port=20002):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -24,14 +41,16 @@ def connect_to_server(ip, port=20002):
                 root = ET.fromstring(xml_str)
                 color = root.find('color')
                 if color is not None:
-                    red = color.get('red')
-                    green = color.get('green')
-                    blue = color.get('blue')
+                    red = int(int(color.get('red')) * 255 / 1023)
+                    green = int(int(color.get('green')) * 255 / 1023)
+                    blue = int(int(color.get('blue')) * 255 / 1023)
                     print(f"Received RGB: Red={red}, Green={green}, Blue={blue}")
+                    # Example usage
+                    send_rgb_to_wled("192.168.69.49", 80, red, green, blue)
+                    print("RGB values sent to WLED instance.")
             except ET.ParseError as e:
                 print(f"Error parsing XML: {e}")
 
 # Example usage
 connect_to_server("127.0.0.1")
-
 
